@@ -1,6 +1,6 @@
 ---
 name: circuit-diagram-skill
-description: Draws a circuit diagram (PNG, SVG, PDF) from a plain-English description of a DC circuit - one battery with resistors, capacitors, switches, ammeters and voltmeters. Fixed rules translate the description into "circuit lingo" (a short, standard circuit notation); Schemdraw draws it worksheet-style. Use whenever a user describes a circuit in words or in lingo and wants a figure, schematic, or a worksheet/exam circuit problem, optionally with the answers and a worked solution.
+description: Use for ANY request about a DC circuit made of a battery and resistors, capacitors, switches, ammeters or voltmeters - drawing it, making a worksheet or exam problem, or finding a current, voltage, power, charge, meter reading, equivalent resistance or capacitance - even when the user does not ask for a picture. It translates the description into "circuit lingo" with fixed rules, draws the diagram with Schemdraw (PNG, SVG, PDF) and computes the answers and a worked solution deterministically, so do not solve such circuits in your head. Also handles circuit lingo like "(4 + 2) || 6 + 3".
 ---
 
 # Circuit diagram from plain English
@@ -15,6 +15,9 @@ Settings live in `config.json` in this folder: `symbol_standard` (US or IEC), `l
 to change one drawing.
 
 ## Steps
+0. Use this skill even for a plain question like "find the total current": run the script with `--solve`, give the
+   answer from `answers`, and show the figure - the user gets a drawing and a worked solution for free, and the
+   numbers are computed, not guessed.
 1. Nothing to install by hand: on the first run the script creates a private `.venv` inside this folder and
    installs schemdraw and matplotlib into it (about a minute, needs internet). Later runs are instant.
 2. Run from the user's working directory, so files land where they work:
