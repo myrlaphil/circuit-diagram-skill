@@ -92,4 +92,3 @@ def test_private_venv_bootstrap(tmp_path):
         assert p.returncode == 0, p.stdout + p.stderr
         assert json.loads(p.stdout)["ok"] and (tmp_path / f"o{i}.png").exists()
     assert (skill / ".venv").exists()
-    assert "first run" in open(tmp_path / "o0.png", "rb").read()[:0].decode() + "first run"  # (install message goes to stderr)
