@@ -40,8 +40,10 @@ git clone https://github.com/myrlaphil/circuit-diagram-skill .cursor/skills/circ
 git clone https://github.com/myrlaphil/circuit-diagram-skill ~/.claude/skills/circuit-diagram-skill
 git clone https://github.com/myrlaphil/circuit-diagram-skill .claude/skills/circuit-diagram-skill
 
-pip install -r circuit-diagram-skill/requirements.txt      # schemdraw, matplotlib
 ```
+No `pip install` needed: the first run creates a private `.venv` inside the skill folder with schemdraw and
+matplotlib (about a minute). If you prefer your own environment, `pip install -r requirements.txt` works too.
+
 Then ask the agent for a circuit: *"draw a 9 V battery with three 6 ohm resistors in parallel, IEC symbols"*.
 Both tools read the same `SKILL.md` (the open Agent Skills format), so nothing needs translating between them.
 

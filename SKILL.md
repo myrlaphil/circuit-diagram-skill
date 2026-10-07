@@ -15,7 +15,8 @@ Settings live in `config.json` in this folder: `symbol_standard` (US or IEC), `l
 to change one drawing.
 
 ## Steps
-1. One-time setup if `schemdraw` is not installed:  `pip install -r "<this folder>/requirements.txt"`
+1. Nothing to install by hand: on the first run the script creates a private `.venv` inside this folder and
+   installs schemdraw and matplotlib into it (about a minute, needs internet). Later runs are instant.
 2. Run from the user's working directory, so files land where they work:
    ```
    python "<this folder>/scripts/draw_circuit.py" "<the user's description>" --out figures/problem1

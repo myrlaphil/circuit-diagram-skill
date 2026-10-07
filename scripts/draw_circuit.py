@@ -27,12 +27,35 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(HERE))
 
-try:
-    import schemdraw  # noqa: F401
-    import matplotlib  # noqa: F401
-except ImportError as e:   # pragma: no cover
-    print(json.dumps({"ok": False, "error": f"missing package: {e.name}. Run:  pip install -r {ROOT / 'requirements.txt'}"}))
-    sys.exit(5)
+
+def _ensure_packages() -> None:
+    """schemdraw and matplotlib must be importable.  If they are not, use (and on first run create) a private
+    virtual environment inside the skill folder, then re-run this script with it.  Keeps stdout clean for JSON."""
+    try:
+        import schemdraw  # noqa: F401
+        import matplotlib  # noqa: F401
+        return
+    except ImportError:
+        pass
+    venv = ROOT / ".venv"
+    py = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+    if Path(sys.executable).resolve() == py.resolve():
+        print(json.dumps({"ok": False, "error": f"schemdraw/matplotlib are missing in {venv}. Delete that folder and "
+                                                f"run again, or: {py} -m pip install -r {ROOT / 'requirements.txt'}"}))
+        sys.exit(5)
+    import subprocess
+    if not py.exists():
+        print(f"[circuit-diagram-skill] first run: installing schemdraw and matplotlib into {venv} ...", file=sys.stderr)
+        subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True)
+        r = subprocess.run([str(py), "-m", "pip", "install", "-q", "-r", str(ROOT / "requirements.txt")])
+        if r.returncode:
+            print(json.dumps({"ok": False, "error": f"could not install packages into {venv} (pip exit {r.returncode}); "
+                                                    f"needs internet access and Python 3.9+"}))
+            sys.exit(5)
+    os.execv(str(py), [str(py), str(Path(__file__).resolve()), *sys.argv[1:]])
+
+
+_ensure_packages()
 
 import lingo            # noqa: E402
 import render_worker    # noqa: E402
