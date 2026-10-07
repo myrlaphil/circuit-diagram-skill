@@ -73,3 +73,23 @@ def test_default_config_is_valid_and_examples_translate():
                      ("12 V battery, an ammeter, then a 4 ohm in series with a closed switch, that pair in parallel with a "
                       "6 ohm, then a 3 ohm, a voltmeter across the 3 ohm", "circuit: A1 + (4 + S1=closed) || 6 + 3 || V1")]:
         assert want in lingo.translate(en)
+
+
+def test_private_venv_bootstrap(tmp_path):
+    """A Python without schemdraw must create <skill>/.venv once and then reuse it on every later run."""
+    import shutil
+    skill = tmp_path / "skill"
+    shutil.copytree(ROOT, skill, ignore=shutil.ignore_patterns(".venv", ".git", "__pycache__", "circuits"))
+    env = {k: v for k, v in __import__("os").environ.items() if k not in ("PYTHONPATH", "VIRTUAL_ENV")}
+    # a bare venv without the packages stands in for a system Python that lacks them
+    bare = tmp_path / "bare"
+    subprocess.run([sys.executable, "-m", "venv", str(bare)], check=True)
+    bare_py = bare / ("Scripts/python.exe" if __import__("os").name == "nt" else "bin/python")
+    for i in range(2):                                   # first run installs, second run reuses
+        p = subprocess.run([str(bare_py), str(skill / "scripts" / "draw_circuit.py"), "--lingo",
+                            "source: 9 V\\ncircuit: 3 + 6", "--formats", "png", "--out", f"o{i}"],
+                           capture_output=True, text=True, cwd=tmp_path, env=env, timeout=600)
+        assert p.returncode == 0, p.stdout + p.stderr
+        assert json.loads(p.stdout)["ok"] and (tmp_path / f"o{i}.png").exists()
+    assert (skill / ".venv").exists()
+    assert "first run" in open(tmp_path / "o0.png", "rb").read()[:0].decode() + "first run"  # (install message goes to stderr)

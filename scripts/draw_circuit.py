@@ -39,7 +39,7 @@ def _ensure_packages() -> None:
         pass
     venv = ROOT / ".venv"
     py = venv / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
-    if Path(sys.executable).resolve() == py.resolve():
+    if Path(sys.prefix).resolve() == venv.resolve():      # already running inside the private venv
         print(json.dumps({"ok": False, "error": f"schemdraw/matplotlib are missing in {venv}. Delete that folder and "
                                                 f"run again, or: {py} -m pip install -r {ROOT / 'requirements.txt'}"}))
         sys.exit(5)
@@ -47,7 +47,8 @@ def _ensure_packages() -> None:
     if not py.exists():
         print(f"[circuit-diagram-skill] first run: installing schemdraw and matplotlib into {venv} ...", file=sys.stderr)
         subprocess.run([sys.executable, "-m", "venv", str(venv)], check=True)
-        r = subprocess.run([str(py), "-m", "pip", "install", "-q", "-r", str(ROOT / "requirements.txt")])
+        r = subprocess.run([str(py), "-m", "pip", "install", "-q", "--disable-pip-version-check",
+                            "-r", str(ROOT / "requirements.txt")])
         if r.returncode:
             print(json.dumps({"ok": False, "error": f"could not install packages into {venv} (pip exit {r.returncode}); "
                                                     f"needs internet access and Python 3.9+"}))
