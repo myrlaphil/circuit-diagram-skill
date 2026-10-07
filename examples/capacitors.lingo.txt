@@ -1,0 +1,4 @@
+# 12 V battery, a 2 uF and a 6 uF capacitor in parallel, then a 4 uF capacitor in series with that pair. Find the charge on the 4 uF capacitor.
+source: 12 V
+circuit: 4uF + 2uF || 6uF
+ask: charge on C1

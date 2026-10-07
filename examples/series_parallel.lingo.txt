@@ -1,0 +1,4 @@
+# 12 V battery, a 4 ohm and a 2 ohm in series, that pair in parallel with a 6 ohm, then a 3 ohm. Find the current through the 2 ohm resistor.
+source: 12 V
+circuit: (4 + 2) || 6 + 3
+ask: current through R2

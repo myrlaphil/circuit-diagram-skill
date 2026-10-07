@@ -1,0 +1,16 @@
+{
+  "_about": "Settings for circuit-diagram-skill. Edit values; keys starting with _ are comments.",
+  "symbol_standard": "US",
+  "_symbol_standard": "US = IEEE zig-zag resistors (American textbooks); IEC = rectangular resistors (European)",
+  "labels": "name_and_value",
+  "_labels": "what resistor/capacitor labels show: name_and_value (R1 and 4.00 Ω), value (4.00 Ω only), name (R1 only)",
+  "formats": ["png", "svg", "pdf"],
+  "_formats": "any of png, svg, pdf",
+  "dpi": 220,
+  "_dpi": "resolution of the PNG; 220 prints well, 110 is fine for screens",
+  "font_size": 12,
+  "output_dir": "circuits",
+  "_output_dir": "where files go when --out gives no folder; relative to the current working directory",
+  "solve": false,
+  "_solve": "true = also write the answers and worked solution (same as the --solve flag)"
+}

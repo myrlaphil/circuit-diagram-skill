@@ -1,0 +1,4 @@
+# 12 V battery, an ammeter, then a 4 ohm in series with a closed switch, that pair in parallel with a 6 ohm, then a 3 ohm, a voltmeter across the 3 ohm. What does the ammeter read and what does the voltmeter read?
+source: 12 V
+circuit: A1 + (4 + S1=closed) || 6 + 3 || V1
+ask: reading of A1, reading of V1
