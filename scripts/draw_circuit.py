@@ -4,6 +4,8 @@
     python scripts/draw_circuit.py "12 V battery, a 4 ohm and a 2 ohm in series, that pair in parallel with a 6 ohm, then a 3 ohm"
     python scripts/draw_circuit.py --lingo "source: 12 V\\ncircuit: (4 + 2) || 6 + 3" --out figures/problem1
     python scripts/draw_circuit.py --file description.txt --solve --standard IEC
+    python scripts/draw_circuit.py --random "Capacitors" --solve            # a random problem of that type
+    python scripts/draw_circuit.py --list-types                             # the problem types
 
 Prints ONE json object to stdout.  Exit codes:
     0  drawn           2  the rules could not read the sentence (message names the word: write the lingo
@@ -97,6 +99,10 @@ def main(argv=None) -> int:
     ap.add_argument("text", nargs="?", help="plain-English description, or circuit lingo")
     ap.add_argument("--lingo", help="circuit lingo (skips the English rules)")
     ap.add_argument("--file", help="read the description or lingo from this file")
+    ap.add_argument("--random", metavar="TYPE", help="make a random problem of this type (see --list-types); "
+                                                     "'any' picks a type at random")
+    ap.add_argument("--seed", type=int, help="with --random: the same seed always gives the same problem")
+    ap.add_argument("--list-types", action="store_true", help="print the problem types and exit")
     ap.add_argument("--out", help="output path without extension, e.g. figures/problem1 (default: <output_dir>/circuit)")
     ap.add_argument("--config", help="settings file (default: config.json in the skill folder)")
     ap.add_argument("--standard", choices=["US", "IEC", "us", "iec"], help="override symbol_standard")
@@ -105,6 +111,10 @@ def main(argv=None) -> int:
     ap.add_argument("--solve", action="store_true", help="also write the answers and worked solution")
     ap.add_argument("--show-code", action="store_true", help="include the generated Schemdraw code in the output")
     a = ap.parse_args(argv)
+    if a.list_types:
+        print(json.dumps({"ok": True, "types": {k: ", ".join(v) for k, v in lingo.PROBLEM_TYPES.items()},
+                          "note": "pass one of these names to --random (or 'any')"}, ensure_ascii=False, indent=2))
+        return 0
 
     try:
         cfg = load_config(a.config)
@@ -118,14 +128,25 @@ def main(argv=None) -> int:
         cfg["formats"] = [f.strip().lower() for f in a.formats.split(",") if f.strip()]
     solve = a.solve or bool(cfg.get("solve"))
 
-    sources = [s for s in (a.text, a.lingo, a.file) if s]
+    sources = [s for s in (a.text, a.lingo, a.file, a.random) if s]
     if len(sources) != 1:
-        fail(3, error="give exactly one of: a description, --lingo, or --file")
-    text = Path(a.file).read_text(encoding="utf-8") if a.file else (a.lingo or a.text)
-    text = text.replace("\\n", "\n").strip()
+        fail(3, error="give exactly one of: a description, --lingo, --file, or --random TYPE")
+    if a.random:
+        kind = None if a.random.lower() in ("any", "random") else a.random
+        try:
+            english, lingo_text = lingo.random_problem(kind, a.seed)
+        except lingo.LingoError as e:
+            fail(3, error=str(e))
+        how = "random"
+        text = english
+    else:
+        text = Path(a.file).read_text(encoding="utf-8") if a.file else (a.lingo or a.text)
+        text = text.replace("\\n", "\n").strip()
 
     # 1. English -> lingo (rules only), unless lingo was given
-    if a.lingo or looks_like_lingo(text):
+    if a.random:
+        pass
+    elif a.lingo or looks_like_lingo(text):
         lingo_text, how, english = text, "given", None
     else:
         english = text

@@ -54,6 +54,7 @@ python scripts/draw_circuit.py --lingo "source: 12 V
 circuit: A1 + (4 + 2) || 6 + 3 || V1
 ask: reading of A1, reading of V1" --standard IEC
 python scripts/draw_circuit.py --file problem.txt --formats png
+python scripts/draw_circuit.py --random "Switch (open or closed)" --solve     # a random problem; --list-types shows the types
 ```
 The script prints one JSON object (lingo, files, question, answers, ...) and returns exit code 0 on success,
 2 when the rules could not read the sentence, 3 for invalid lingo, 4 for a drawing error.

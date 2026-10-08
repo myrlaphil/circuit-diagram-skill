@@ -92,3 +92,18 @@ def test_private_venv_bootstrap(tmp_path):
         assert p.returncode == 0, p.stdout + p.stderr
         assert json.loads(p.stdout)["ok"] and (tmp_path / f"o{i}.png").exists()
     assert (skill / ".venv").exists()
+
+
+def test_random_problems_from_the_cli(tmp_path):
+    code, out = run("--list-types", cwd=tmp_path)
+    assert code == 0 and "Capacitors" in out["types"]
+    code, out = run("--random", "Capacitors", "--seed", "3", "--solve", "--formats", "png", cwd=tmp_path)
+    assert code == 0 and out["translated_by"] == "random" and "uF" in out["lingo"] and out["answers"]
+    assert out["english"] and lingo.translate(out["english"]) == out["lingo"]
+    again = run("--random", "Capacitors", "--seed", "3", "--formats", "png", cwd=tmp_path)[1]
+    assert again["lingo"] == out["lingo"]
+    assert (tmp_path / "circuits" / "circuit.lingo.txt").read_text().startswith("# " + out["english"])
+    code, out = run("--random", "any", "--formats", "png", cwd=tmp_path)
+    assert code == 0
+    code, out = run("--random", "Worksheet", cwd=tmp_path)
+    assert code == 3 and "Unknown problem type" in out["error"]

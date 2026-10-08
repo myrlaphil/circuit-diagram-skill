@@ -28,6 +28,14 @@ to change one drawing.
    - `--standard IEC` for box-style resistors, `--labels value` for values without names, `--formats png`
    - `--lingo "<lingo>"` to pass circuit lingo instead of English; `--file x.txt` to read either from a file
    - `--show-code` if the user asks how the figure was drawn (returns the Schemdraw code)
+   - **Random problems:** `--random "<type>" --solve` makes a problem of that type with its own English
+     description (in the JSON as `english`), lingo, figure and answers; `--seed N` repeats a problem.
+     Types: `Mixed series-parallel`, `Simple series`, `Simple parallel`, `Unknown resistor`, `Capacitors`,
+     `Switch (open or closed)`, `Meters (ammeter and voltmeter readings)`, or `any`. Use this whenever the
+     user asks for "a random / another / a practice problem" - do not invent values yourself.
+   - **Editing a problem:** when the user asks to change something ("make the 6 ohm a 10 ohm", "add a
+     voltmeter across R3", "ask for the power instead"), edit the previous lingo accordingly and rerun with
+     `--lingo`; show the new lingo. Keep everything else exactly as it was.
 3. Read the JSON on stdout and act on the exit code:
    - **0** - show the user the `lingo` so they can check the circuit is what they meant, and the PNG path
      (open or embed it). If they asked for a problem, quote `question` and, with `--solve`, `answers`.
