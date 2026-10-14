@@ -26,6 +26,8 @@ to change one drawing.
    ```
    - `--solve` when the user wants answers or a worked solution (also written to `<out>.solution.md`)
    - `--standard IEC` for box-style resistors, `--labels value` for values without names, `--formats png`
+   - `--layout ladder` (default, textbook style: parallel resistors drawn as vertical rungs between the two
+     rails) or `--layout stacked` (worksheet style: horizontal branches stacked on a rail)
    - `--lingo "<lingo>"` to pass circuit lingo instead of English; `--file x.txt` to read either from a file
    - `--show-code` if the user asks how the figure was drawn (returns the Schemdraw code)
    - **Random problems:** `--random "<type>" --solve` makes a problem of that type with its own English
@@ -33,6 +35,11 @@ to change one drawing.
      Types: `Mixed series-parallel`, `Simple series`, `Simple parallel`, `Unknown resistor`, `Capacitors`,
      `Switch (open or closed)`, `Meters (ammeter and voltmeter readings)`, or `any`. Use this whenever the
      user asks for "a random / another / a practice problem" - do not invent values yourself.
+   - **Isomorphic variations:** when the user asks for several variations of one problem (same structure,
+     different values), vary the look as well as the numbers: alternate `--layout ladder` and `--layout stacked`
+     across the set, and for some of them move the series part to the other rail by reordering the lingo
+     (`2 + 4 || 6 || 10` puts the 2 Ω on the top rail, `4 || 6 || 10 + 2` on the bottom). Say which layout each
+     figure uses so the user can pick a style for the whole set. One problem on its own always uses the default.
    - **Editing a problem:** when the user asks to change something ("make the 6 ohm a 10 ohm", "add a
      voltmeter across R3", "ask for the power instead"), edit the previous lingo accordingly and rerun with
      `--lingo`; show the new lingo. Keep everything else exactly as it was.
@@ -70,9 +77,17 @@ ask: current through R2, voltage across R2
 | `text: ...` | your own wording of the question |
 | `title: ...` | a title kept with the problem |
 
-**Layout rule:** parts are drawn in the order written. Parts before the last `+` go on the top rail, left to
-right; the last series part goes on the bottom rail; parallel branches stack top to bottom. To move a part,
-move it in the text: `3 + (4 + 2) || 6` puts the 3 Ω top-left instead of on the bottom.
+**Layout rule:** parts are drawn in the order written, going round the loop from the battery's + terminal.
+- `ladder` (default): the first parallel group made only of single parts is drawn as vertical rungs between the
+  top and bottom rails, like a textbook figure. Parts written before it sit on the top rail; parts written after
+  it sit on the bottom rail, following the current back to the battery. So `2 + 4 || 6 || 10` puts the 2 Ω on
+  the top rail and `4 || 6 || 10 + 2` puts it on the bottom. Groups that contain a series branch, such as
+  `(4 + 2) || 6`, are always stacked (horizontal branches one above the other). A circuit with no ladder-able
+  group uses the stacked rule below.
+- `stacked`: every part is horizontal. Parts before the last `+` go on the top rail, left to right; the last
+  series part goes on the bottom rail; parallel branches stack top to bottom. `3 + (4 + 2) || 6` puts the 3 Ω
+  top-left instead of on the bottom.
+No junction dots are drawn in the ladder layout; the stacked layout marks the two junctions of each group.
 
 ## English the rules understand
 - battery: `12 V battery`, `a 9 volt source`

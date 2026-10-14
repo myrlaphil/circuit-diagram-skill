@@ -12,7 +12,7 @@ Prints ONE json object to stdout.  Exit codes:
     3  invalid lingo      yourself and rerun with --lingo)     4  drawing failed     5  missing package
 
 Settings (symbol standard, label style, formats, dpi, ...) come from config.json next to this folder;
---config points at another file, and --standard / --labels / --formats / --solve override single values.
+--config points at another file, and --standard / --labels / --layout / --formats / --solve override single values.
 No AI is used here: the same words always give the same lingo and the same picture.
 """
 from __future__ import annotations
@@ -63,8 +63,8 @@ _ensure_packages()
 import lingo            # noqa: E402
 import render_worker    # noqa: E402
 
-DEFAULTS = {"symbol_standard": "US", "labels": "name_and_value", "formats": ["png", "svg", "pdf"], "dpi": 220,
-            "font_size": 12, "output_dir": "circuits", "solve": False}
+DEFAULTS = {"symbol_standard": "US", "labels": "name_and_value", "layout": "ladder",
+            "formats": ["png", "svg", "pdf"], "dpi": 220, "font_size": 12, "output_dir": "circuits", "solve": False}
 
 
 def load_config(path: str | None) -> dict:
@@ -78,6 +78,9 @@ def load_config(path: str | None) -> dict:
     cfg["symbol_standard"] = str(cfg["symbol_standard"]).upper()
     if cfg["symbol_standard"] not in ("US", "IEC"):
         raise ValueError(f"symbol_standard must be US or IEC, not {cfg['symbol_standard']!r}")
+    cfg["layout"] = str(cfg["layout"]).lower()
+    if cfg["layout"] not in lingo.LAYOUTS:
+        raise ValueError(f"layout must be ladder or stacked, not {cfg['layout']!r}")
     cfg["formats"] = [str(f).lower() for f in cfg["formats"]]
     bad = [f for f in cfg["formats"] if f not in ("png", "svg", "pdf")]
     if bad:
@@ -107,6 +110,9 @@ def main(argv=None) -> int:
     ap.add_argument("--config", help="settings file (default: config.json in the skill folder)")
     ap.add_argument("--standard", choices=["US", "IEC", "us", "iec"], help="override symbol_standard")
     ap.add_argument("--labels", choices=["name_and_value", "value", "name"], help="override labels")
+    ap.add_argument("--layout", choices=["ladder", "stacked"],
+                    help="override layout: ladder = vertical parallel branches between the rails (textbook); "
+                         "stacked = horizontal parallel branches stacked on a rail (worksheet)")
     ap.add_argument("--formats", help="override formats, e.g. png,svg")
     ap.add_argument("--solve", action="store_true", help="also write the answers and worked solution")
     ap.add_argument("--show-code", action="store_true", help="include the generated Schemdraw code in the output")
@@ -124,6 +130,8 @@ def main(argv=None) -> int:
         cfg["symbol_standard"] = a.standard.upper()
     if a.labels:
         cfg["labels"] = a.labels
+    if a.layout:
+        cfg["layout"] = a.layout
     if a.formats:
         cfg["formats"] = [f.strip().lower() for f in a.formats.split(",") if f.strip()]
     solve = a.solve or bool(cfg.get("solve"))
@@ -160,7 +168,7 @@ def main(argv=None) -> int:
     # 2. lingo -> problem
     try:
         prob = lingo.parse(lingo_text)
-        code = lingo.draw_code(prob, cfg["symbol_standard"], cfg["labels"], cfg["font_size"])
+        code = lingo.draw_code(prob, cfg["symbol_standard"], cfg["labels"], cfg["font_size"], cfg["layout"])
     except lingo.LingoError as e:
         fail(3, stage="parse", error=str(e), lingo=lingo_text)
 
@@ -183,7 +191,7 @@ def main(argv=None) -> int:
     result = {"ok": True, "translated_by": how, "lingo": lingo_text, "question": lingo.question_text(prob),
               "parts": [{"name": q.name, "kind": q.what, "value": q.value, "hidden": q.hidden,
                          **({"closed": q.closed} if q.kind == "S" else {})} for q in prob.parts()],
-              "settings": {k: cfg[k] for k in ("symbol_standard", "labels", "formats", "dpi", "font_size")},
+              "settings": {k: cfg[k] for k in ("symbol_standard", "labels", "layout", "formats", "dpi", "font_size")},
               "files": files}
     if english:
         result["english"] = english

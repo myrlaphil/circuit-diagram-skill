@@ -4,6 +4,8 @@
   "_symbol_standard": "US = IEEE zig-zag resistors (American textbooks); IEC = rectangular resistors (European)",
   "labels": "name_and_value",
   "_labels": "what resistor/capacitor labels show: name_and_value (R1 and 4.00 Ω), value (4.00 Ω only), name (R1 only)",
+  "layout": "ladder",
+  "_layout": "ladder = parallel branches drawn as vertical rungs between the rails (textbook); stacked = horizontal branches stacked on a rail (worksheet)",
   "formats": ["png", "svg", "pdf"],
   "_formats": "any of png, svg, pdf",
   "dpi": 220,

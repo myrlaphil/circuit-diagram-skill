@@ -467,6 +467,8 @@ W = 3.0            # width of one part (schemdraw unit)
 LEAD = 0.75        # short wire on each side of a parallel stack
 GAP = 0.9          # vertical space between stacked branches
 UP, DOWN = 1.15, 0.35
+PITCH = 2.6        # horizontal distance between the rungs of a ladder (vertical parallel branches)
+LAYOUTS = ("ladder", "stacked")
 
 
 def _si(x: float, unit: str) -> str:
@@ -566,17 +568,44 @@ def _draw(n: Node, x: float, y: float, L: List[str], loc: Optional[str] = None) 
     L.append(f"d += elm.Dot().at({_pt(xr, y)})")
 
 
-def draw_code(p: Problem, style: str = "US", labels: str = LABELS, font_size: int = 12) -> str:
-    """Problem -> complete Schemdraw script.  The last series item goes on the bottom rail, like a worksheet.
-    style: "US" (IEEE zig-zag resistors) or "IEC" (boxes).  labels: name_and_value | value | name."""
+def _is_ladder(n: Node) -> bool:
+    """A parallel group of single parts: drawn as vertical rungs between the two rails (textbook style)."""
+    return isinstance(n, Group) and n.kind == "parallel" and all(isinstance(i, R) for i in n.items)
+
+
+def _header(p: Problem, style: str, font_size: int, H: float) -> List[str]:
+    return ["import schemdraw", "import schemdraw.elements as elm", "",
+            f"elm.style(elm.STYLE_{'IEC' if style == 'IEC' else 'IEEE'})",
+            "d = schemdraw.Drawing(show=False)", f"d.config(unit={W:g}, fontsize={int(font_size)})", "",
+            "# battery on the left (+ at the top)",
+            f"battery = d.add(elm.BatteryCell().endpoints({_pt(0, H)}, {_pt(0, 0)}).label({f'{p.volts:.1f} V'!r}))",
+            "", "# top rail"]
+
+
+def draw_code(p: Problem, style: str = "US", labels: str = LABELS, font_size: int = 12,
+              layout: str = "ladder") -> str:
+    """Problem -> complete Schemdraw script.
+    style: "US" (IEEE zig-zag resistors) or "IEC" (boxes).  labels: name_and_value | value | name.
+    layout: "ladder" (default, textbook style) - the first parallel group of single parts is drawn as vertical
+            rungs between the top and bottom rails; parts written before it sit on the top rail, parts after it
+            on the bottom rail (following the current back to the battery).  Circuits without such a group fall
+            back to the stacked layout.
+            "stacked" (worksheet style) - every part is horizontal, parallel branches stack top to bottom, and the
+            last series part goes on the bottom rail."""
     global LABELS
     if labels not in ("name_and_value", "value", "name"):
         raise LingoError(f"labels must be name_and_value, value or name, not '{labels}'.")
+    if layout not in LAYOUTS:
+        raise LingoError(f"layout must be ladder or stacked, not '{layout}'.")
     LABELS = labels
+    items = list(p.tree.items) if isinstance(p.tree, Group) and p.tree.kind == "series" else [p.tree]
+    k = next((i for i, n in enumerate(items) if _is_ladder(n)), None) if layout == "ladder" else None
+    if k is not None:
+        return _ladder_code(p, items[:k], items[k], items[k + 1:], style, font_size)
     top: List[Node]
     bottom: Optional[Node]
-    if isinstance(p.tree, Group) and p.tree.kind == "series" and len(p.tree.items) >= 2:
-        top, bottom = p.tree.items[:-1], p.tree.items[-1]
+    if len(items) >= 2:
+        top, bottom = items[:-1], items[-1]
     else:
         top, bottom = [p.tree], None
     top_node: Node = top[0] if len(top) == 1 else Group("series", top)
@@ -584,12 +613,7 @@ def draw_code(p: Problem, style: str = "US", labels: str = LABELS, font_size: in
     bw, bup, bdown = _size(bottom) if bottom else (0.0, 0.0, 0.0)
     width = max(tw, bw) + 2 * 1.5
     H = max(4.0, tdown + bup + 2.2)
-    L = ["import schemdraw", "import schemdraw.elements as elm", "",
-         f"elm.style(elm.STYLE_{'IEC' if style == 'IEC' else 'IEEE'})",
-         "d = schemdraw.Drawing(show=False)", f"d.config(unit={W:g}, fontsize={int(font_size)})", "",
-         "# battery on the left (+ at the top)",
-         f"battery = d.add(elm.BatteryCell().endpoints({_pt(0, H)}, {_pt(0, 0)}).label({f'{p.volts:.1f} V'!r}))",
-         "", "# top rail"]
+    L = _header(p, style, font_size, H)
     tx = 1.5 + (width - 3 - tw) / 2
     L.append(f"d += elm.Line().endpoints({_pt(0, H)}, {_pt(tx, H)})")
     _draw(top_node, tx, H, L)
@@ -602,6 +626,43 @@ def draw_code(p: Problem, style: str = "US", labels: str = LABELS, font_size: in
         L.append(f"d += elm.Line().endpoints({_pt(bx, 0)}, {_pt(0, 0)})")
     else:
         L.append(f"d += elm.Line().endpoints({_pt(width, 0)}, {_pt(0, 0)})")
+    return "\n".join(L) + "\n"
+
+
+def _ladder_code(p: Problem, before: List[Node], ladder: Group, after: List[Node], style: str,
+                 font_size: int) -> str:
+    """Textbook layout: battery left, `before` on the top rail, the ladder's rungs spanning both rails on the
+    right, `after` on the bottom rail (drawn right to left, i.e. in the order the current meets them)."""
+    top_node: Optional[Node] = None if not before else (before[0] if len(before) == 1 else Group("series", before))
+    bot_items = list(reversed(after))
+    bot_node: Optional[Node] = None if not after else (bot_items[0] if len(bot_items) == 1
+                                                       else Group("series", bot_items))
+    tw, tup, tdown = _size(top_node) if top_node else (0.0, 0.0, 0.0)
+    bw, bup, bdown = _size(bot_node) if bot_node else (0.0, 0.0, 0.0)
+    H = max(4.0, tdown + bup + 2.2)
+    side = max(tw, bw)
+    x0 = 1.5 + side + (1.0 if side else 1.5)          # x of the first rung
+    xs = [x0 + i * PITCH for i in range(len(ladder.items))]
+    L = _header(p, style, font_size, H)
+    if top_node:
+        tx = 1.5 + (side - tw) / 2
+        L.append(f"d += elm.Line().endpoints({_pt(0, H)}, {_pt(tx, H)})")
+        _draw(top_node, tx, H, L)
+        L.append(f"d += elm.Line().endpoints({_pt(tx + tw, H)}, {_pt(xs[-1], H)})")
+    else:
+        L.append(f"d += elm.Line().endpoints({_pt(0, H)}, {_pt(xs[-1], H)})")
+    L += ["", "# parallel rungs between the rails"]
+    for q, x in zip(ladder.items, xs):
+        L.append(f"{q.name} = d.add({_elm(q)}.endpoints({_pt(x, H)}, {_pt(x, 0)})"
+                 f".label({_label(q)!r}, loc='bottom', halign='left', ofst=0.3))")
+    L += ["", "# bottom rail"]
+    if bot_node:
+        bx = 1.5 + (side - bw) / 2
+        L.append(f"d += elm.Line().endpoints({_pt(xs[-1], 0)}, {_pt(bx + bw, 0)})")
+        _draw(bot_node, bx, 0, L, "bottom")
+        L.append(f"d += elm.Line().endpoints({_pt(bx, 0)}, {_pt(0, 0)})")
+    else:
+        L.append(f"d += elm.Line().endpoints({_pt(xs[-1], 0)}, {_pt(0, 0)})")
     return "\n".join(L) + "\n"
 
 

@@ -15,12 +15,18 @@ ask: current through R2
 ```
 ![series-parallel example](examples/series_parallel.png)
 
+```
+source: 12 V                       ->   examples/ladder.png  (the default "ladder" layout;
+circuit: 2 + 4 || 6 || 10                                     --layout stacked gives the worksheet style)
+```
+![ladder example](examples/ladder.png)
+
 ## How it works
 | Step | Tool | AI involved? |
 |---|---|---|
 | English → circuit lingo | fixed phrase rules in `scripts/lingo.py` (`translate`) | no |
 | lingo → circuit tree | hand-written parser (`parse`) | no |
-| tree → figure | worksheet-style layout writing [Schemdraw](https://schemdraw.readthedocs.io/) code (`draw_code`), rendered by Schemdraw + Matplotlib (`scripts/render_worker.py`) | no |
+| tree → figure | textbook-style layout (`ladder`: parallel branches as vertical rungs between the rails; or `stacked`, the worksheet style) writing [Schemdraw](https://schemdraw.readthedocs.io/) code (`draw_code`), rendered by Schemdraw + Matplotlib (`scripts/render_worker.py`) | no |
 | answers (optional) | series/parallel reduction with worked steps (`solve`) | no |
 | a sentence the rules cannot read | the agent writes the lingo itself, following `SKILL.md`, and the script checks it | yes, only then |
 
@@ -53,7 +59,7 @@ python scripts/draw_circuit.py "9 V battery, a 3 ohm and a 6 ohm in parallel, th
 python scripts/draw_circuit.py --lingo "source: 12 V
 circuit: A1 + (4 + 2) || 6 + 3 || V1
 ask: reading of A1, reading of V1" --standard IEC
-python scripts/draw_circuit.py --file problem.txt --formats png
+python scripts/draw_circuit.py --file problem.txt --formats png --layout stacked
 python scripts/draw_circuit.py --random "Switch (open or closed)" --solve     # a random problem; --list-types shows the types
 ```
 The script prints one JSON object (lingo, files, question, answers, ...) and returns exit code 0 on success,

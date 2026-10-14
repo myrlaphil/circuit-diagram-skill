@@ -31,12 +31,24 @@ def test_english_to_files(tmp_path):
     assert [p["name"] for p in out["parts"]] == ["R1", "R2", "R3", "R4"]
 
 
+def test_layout_override(tmp_path):
+    code, out = run("--lingo", "source: 12 V\\ncircuit: 2 + 4 || 6", "--formats", "png", "--show-code", cwd=tmp_path)
+    assert code == 0 and out["settings"]["layout"] == "ladder" and "elm.Dot()" not in out["schemdraw_code"]
+    code, out = run("--lingo", "source: 12 V\\ncircuit: 2 + 4 || 6", "--formats", "png", "--show-code",
+                    "--layout", "stacked", cwd=tmp_path)
+    assert code == 0 and out["settings"]["layout"] == "stacked" and "elm.Dot()" in out["schemdraw_code"]
+    (tmp_path / "bad.json").write_text(json.dumps({"layout": "sideways"}))
+    code, out = run("--lingo", "source: 12 V\\ncircuit: 2 + 4 || 6", "--config", str(tmp_path / "bad.json"), cwd=tmp_path)
+    assert code == 3 and "layout must be" in out["error"]
+
+
 def test_lingo_input_solve_and_overrides(tmp_path):
     code, out = run("--lingo", "source: 12 V\\ncircuit: A1 + (4 + S1=closed) || 6 + 3 || V1\\nask: reading of A1, reading of V1",
                     "--solve", "--standard", "IEC", "--labels", "value", "--formats", "png", "--show-code", cwd=tmp_path)
     assert code == 0 and out["translated_by"] == "given"
     assert out["answers"] == ["A1 reads 2.22 A", "V1 reads 6.67 V"]
-    assert out["settings"] == {"symbol_standard": "IEC", "labels": "value", "formats": ["png"], "dpi": 220, "font_size": 12}
+    assert out["settings"] == {"symbol_standard": "IEC", "labels": "value", "layout": "ladder", "formats": ["png"],
+                               "dpi": 220, "font_size": 12}
     assert "STYLE_IEC" in out["schemdraw_code"] and "elm.MeterA()" in out["schemdraw_code"]
     assert set(out["files"]) == {"png", "lingo", "solution"}
     assert (tmp_path / "circuits" / "circuit.png").exists() and not (tmp_path / "circuits" / "circuit.svg").exists()

@@ -299,3 +299,25 @@ def test_draw_code_label_and_font_options():
     assert "$R_{1}$\\n4.00 Ω" in lingo.draw_code(p)          # the default is back after a labels= call
     with pytest.raises(lingo.LingoError, match="labels must be"):
         lingo.draw_code(p, labels="big")
+
+
+def test_draw_code_ladder_layout_is_the_default():
+    p = lingo.parse("source: 12 V\ncircuit: 2 + 4 || 6 || 10")
+    code = lingo.draw_code(p)
+    # three vertical rungs between the rails (y = 4 down to y = 0), labels to the right, no junction dots
+    assert code.count("endpoints((" ) and all(f"R{i} = d.add(elm.Resistor().endpoints((" in code for i in (1, 2, 3, 4))
+    rungs = [ln for ln in code.splitlines() if ", 4), (" in ln and ", 0))" in ln and "elm.Resistor" in ln]
+    assert len(rungs) == 3 and all("loc='bottom', halign='left'" in ln for ln in rungs)
+    assert "elm.Dot()" not in code
+    # the part written after the group goes on the bottom rail, drawn following the current
+    after = lingo.draw_code(lingo.parse("source: 12 V\ncircuit: 4 || 6 || 10 + 2 + 3"))
+    assert "R4 = d.add(elm.Resistor().endpoints((4.5, 0), (7.5, 0))" in after        # R4 right of R5 on the bottom
+    assert "R5 = d.add(elm.Resistor().endpoints((1.5, 0), (4.5, 0))" in after
+    # a nested group is never a ladder: stacked fallback, same code as layout="stacked"
+    nested = lingo.parse("source: 12 V\ncircuit: (4 + 2) || 6 + 3")
+    assert lingo.draw_code(nested) == lingo.draw_code(nested, layout="stacked") and "elm.Dot()" in lingo.draw_code(nested)
+    # the stacked layout keeps the old worksheet drawing for a ladder-able circuit
+    stacked = lingo.draw_code(p, layout="stacked")
+    assert "elm.Dot()" in stacked and not [ln for ln in stacked.splitlines() if ", 4), (" in ln and ", 0))" in ln]
+    with pytest.raises(lingo.LingoError, match="layout must be"):
+        lingo.draw_code(p, layout="sideways")
