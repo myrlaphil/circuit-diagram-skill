@@ -37,11 +37,11 @@ to change one drawing.
      Types: `Mixed series-parallel`, `Simple series`, `Simple parallel`, `Unknown resistor`, `Capacitors`,
      `Switch (open or closed)`, `Meters (ammeter and voltmeter readings)`, or `any`. Use this whenever the
      user asks for "a random / another / a practice problem" - do not invent values yourself.
-   - **Isomorphic variations:** when the user asks for several variations of one problem (same structure,
-     different values), vary the look as well as the numbers: alternate `--layout ladder` and `--layout stacked`
-     across the set, and for some of them move the series part to the other rail by reordering the lingo
-     (`2 + 4 || 6 || 10` puts the 2 Ω on the top rail, `4 || 6 || 10 + 2` on the bottom). Say which layout each
-     figure uses so the user can pick a style for the whole set. One problem on its own always uses the default.
+   - **Isomorphic variations:** when the user asks for several variations of one problem, vary the circuit
+     (topology, values, what is asked), not the drawing style. Draw every figure in a set with the same
+     layout - the default `ladder` (textbook) unless the user asks for `--layout stacked` (worksheet) for the
+     whole set. A consistent look keeps the only difference between items the physics. Reordering the lingo
+     to move a part to the other rail is also a cosmetic change, not a variation.
    - **Editing a problem:** when the user asks to change something ("make the 6 ohm a 10 ohm", "add a
      voltmeter across R3", "ask for the power instead"), edit the previous lingo accordingly and rerun with
      `--lingo`; show the new lingo. Keep everything else exactly as it was.
